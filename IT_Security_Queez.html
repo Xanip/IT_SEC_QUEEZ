@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiberbiztonság Kvíz</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        #quiz-container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h1 { color: #1a73e8; text-align: center; font-size: 1.5rem; }
+        .question { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; color: #333; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fff; }
+        .option:hover { border-color: #1a73e8; background: #f8fbff; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+        .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        #next-btn, #restart-btn { margin-top: 1.5rem; width: 100%; padding: 12px; border: none; border-radius: 8px; background: #1a73e8; color: white; font-weight: bold; cursor: pointer; display: none; }
+        #score-board { text-align: center; font-weight: bold; margin-bottom: 10px; color: #555; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <div id="score-board">Kérdés: 1 / 41 | Pontszám: 0</div>
+    <div id="quiz-content">
+        <div class="question" id="question-text">Kérdés betöltése...</div>
+        <div class="options" id="options-container"></div>
+    </div>
+    <button id="next-btn">Következő kérdés</button>
+    <div id="result-screen" style="display:none; text-align:center;">
+        <h2>Vége a kvíznek!</h2>
+        <p id="final-score" style="font-size: 1.5rem;"></p>
+        <button id="restart-btn" style="display:block;">Újrakezdés</button>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    { q: "Mandatory Access Control esetében az adminisztrátor definiálja a szabályokat, amik kötelezően mindenkire vonatkoznak.", a: ["Igaz", "Hamis"], c: 0 },
+    { q: "A smart kártyák biztonságosabbak, mint a proxy kártyák, mert nem lehet őket triviálisan másolni.", a: ["Igaz", "Hamis"], c: 0 },
+    { q: "Hogyan kell kezelni egy sérült bemeneti adatot?", a: ["Meg kell próbálni automatikusan kijavítani.", "El kell utasítani és naplózni kell az eseményt."], c: 1 },
+    { q: "Az open design tervezési elv lényege, hogy ...", a: ["a rendszer biztonságát ne a rendszer komplexitása adja, hanem csak a beépített biztonsági mechanizmusok.", "a rendszer terveit minden esetben érdemes nyilvánosságra hozni."], c: 0 },
+    { q: "A Threat, Risk, Vulnerability analysis célja, ...", a: ["hogy dokumentálja a biztonsági mechanizmusok beépítésének az indokait.", "hogy rendszerezetten felsorolja a rendszerüket fenyegető támadókat."], c: 0 },
+    { q: "Mi a statikus elemzés egyik hátránya?", a: ["Nem talál ismert sérülékenységeket.", "Nincs futásidejű információ."], c: 1 },
+    { q: "Mit mond a pszichológiai elfogadhatóság elve?", a: ["A felhasználóknak el kell fogadni a 2FA-t.", "A biztonsági mechanizmusok ne terheljék túl a felhasználót."], c: 1 },
+    { q: "Mi a komment karakterek szerepe SQL injection támadás során?", a: ["Segítségével a támadó jogosultságot szerez.", "Segítségével az eredeti SQL lekérdezés egyes részei 'kikapcsolhatók'."], c: 1 },
+    { q: "Miből áll az origin a kliens oldali biztonsági modellben?", a: ["Security header, protokoll és URL-ből.", "Sémából, domainből és portból."], c: 1 },
+    { q: "Milyen szerepe van a Content Security Policy-nek XSS ellen?", a: ["Csökkentheti az XSS támadások hatását.", "Teljes mértékben meggátolja a kódfuttatást."], c: 0 },
+    { q: "Az URL mely részét dolgozza fel a szerver oldali komponens?", a: ["A használt protokoll metódust.", "A fragmens azonosítót."], c: 0 },
+    { q: "Mit jelent a Cross-Site Scripting (XSS) támadás?", a: ["A támadó képes elérni, hogy a saját kódja futási jogosultságot érjen el.", "A támadó JavaScript kódot futtat egy másik origin kontextusában."], c: 1 },
+    { q: "A kriptográfia ...", a: ["egyiptomi sírkamrák falán található üzenetek titkosítása.", "algoritmikus módszerek tárháza információbiztonsági szolgáltatások megvalósítására."], c: 1 },
+    { q: "Az Enigma egy történelmi rejtjelező, ...", a: ["amit az ókori spártaiak használtak.", "amit a németek használtak a 2. világháború idején."], c: 1 },
+    { q: "Az autentikáció célja, hogy meghatározza, melyik felhasználónak milyen jogosultságai vannak.", a: ["Igaz", "Hamis"], c: 1 },
+    { q: "Az Access Control listák minden objecthez definiálják, ki mit csinálhat vele.", a: ["Igaz", "Hamis"], c: 0 },
+    { q: "Ha egy webalkalmazást implementálunk, a jelszavakat mindig titkosítva kell tárolni az adatbázisban.", a: ["Igaz", "Hamis"], c: 1 },
+    { q: "A biztonsági tesztelés keretében alkalmazott statikus programelemzési technikák előnye, hogy...", a: ["olyan hibákat talál, amik csak futáskor jönnek elő.", "már a fejlesztési folyamat korai szakaszában alkalmazhatók."], c: 1 },
+    { q: "A fuzzing alapötlete az, hogy...", a: ["véletlenszerűen generált bemeneti adatokkal tesztelje a szoftvert.", "átolvassa a forráskód utasításait."], c: 0 },
+    { q: "A biztonsági tesztelés célja...", a: ["a sérülékenységek feltárása és a biztonsági funkciók megfelelő működésének biztosítása.", "annak garantálása, hogy a rendszer 100%-ig feltörhetetlen legyen."], c: 0 },
+    { q: "A SAST-eszközök hamis pozitív riasztásokat generálhatnak, mert...", a: ["csak a kihasználható hibákat jelzik.", "lehet, hogy nem rendelkeznek a külső függőségekre vonatkozó ismeretekkel."], c: 1 },
+    { q: "A dinamikus programelemzés hátránya, hogy ...", a: ["alacsony a kódlefedettsége.", "mindig hozzáférést igényel az eredeti forráskódhoz."], c: 0 },
+    { q: "Mit értünk kompromittált állapot alatt egy IT rendszer esetében?", a: ["Biztonsági követelmények kívánt kompromisszuma (trade-off).", "Nem kívánt állapot, melyben bizonyos elvárt biztonsági követelmények nem teljesülnek."], c: 1 },
+    { q: "A sérülékenységekkel kapcsolatos információk nyilvános közzététele...", a: ["hasznos, mert az üzemeltetők tudomást szereznek róluk és kezelhetik őket.", "káros, mert csak a támadókat segíti."], c: 0 },
+    { q: "A kockázat (risk) ...", a: ["egy potenciális támadás bekövetkezésének valószínűsége.", "egy fenyegetés bekövetkezéséből származó várható veszteség mértéke."], c: 1 },
+    { q: "Melyik kulcskezelési módszer biztonságosabb?", a: ["Bontás ellenálló hardver modulban (pl. chip-kártya) tároljuk a kulcsot, amit sosem olvasunk ki.", "Titkosítva tároljuk egy fájlban, és használatkor dekódoljuk."], c: 0 },
+    { q: "Melyik két tulajdonság jellemző a bit-commitment sémákra?", a: ["Stretching és salting.", "Hiding és binding."], c: 1 },
+    { q: "Az üzenethitelesítés azt jelenti, hogy az üzenet fogadója ...", a: ["meg tud győződni, hogy az üzenet nem módosult.", "megbízhatóan meg tudja állapítani, hogy ki az üzenet küldője."], c: 1 },
+    { q: "Mi a különbség a MAC és a digitális aláírás között?", a: ["A MAC titkosít, az aláírás nem.", "A MAC csak a fogadó számára bizonyít, a digitális aláírás bárki számára ellenőrizhető."], c: 1 },
+    { q: "A hibrid rejtjelezés azt jelenti, hogy ...", a: ["egyszerre használunk kulcsfolyam és blokkrejtjelezőt.", "egyszerre használunk egy szimmetrikus és egy aszimmetrikus kulcsú rejtjelezőt."], c: 1 },
+    { q: "Melyik memóriaelem felülírása vezethet vezérlésátvételhez?", a: ["A visszatérési cím.", "Egy lokális változó kezdeti értéke."], c: 0 },
+    { q: "Buffer overflow során általában mi történik?", a: ["A támadó célja, hogy nyom nélkül fusson tovább a kód.", "A sérülékeny program összeomlik (szegmentálási hiba)."], c: 1 },
+    { q: "DEP bekapcsolása esetén mi nem lehetséges?", a: ["A stacken tárolt shellcode közvetlen futtatása.", "A stacken tárolt adatok módosítása."], c: 0 },
+    { q: "TOCTOU sebezhetőség akkor keletkezik, ha...", a: ["az ellenőrzés és a használat között megváltozik az erőforrás állapota.", "az ellenőrzés hibás logikai feltételt használ."], c: 0 },
+    { q: "Mi az ASLR védelem alapötlete?", a: ["A memóriában tárolt adatok titkosítása.", "A különböző memóriaszegmensek címeinek véletlenszerű eltolása."], c: 1 },
+    { q: "Egy vírus gazdateste lehet ...", a: ["egy képfájl.", "egy tűzfal."], c: 0 },
+    { q: "Időzített bombát általában az alábbi típusú szoftver implementál:", a: ["trójai", "féreg"], c: 0 },
+    { q: "Célzott támadások esetén a támadók arra használják a malware-t, hogy ...", a: ["spam leveleket küldjenek.", "kémkedjenek."], c: 1 },
+    { q: "A malware olyan kód, amely ...", a: ["szándékosan kárt okozhat egy informatikai rendszerben.", "csak e-mail mellékletként terjed."], c: 0 },
+    { q: "A rosszindulatú szoftverek témakörében a szignatúra...", a: ["egyfajta egyedi azonosító ismert malware-ek felismeréséhez.", "egy digitális tanúsítvány."], c: 0 },
+    { q: "Az őskép ellenállóság hash függvények esetén azt jelenti, hogy ...", a: ["nehéz olyan bemenetet találni, melynek hash értéke egy előre megadott érték.", "nehéz két különböző bemenetet találni azonos hash értékkel."], c: 0 },
+    {q: "CBC mód esetén, az IV-vel szemben támasztott fő követelmény, hogy...", a: ["titkos legyen a támadó számára", "megjósolhatatlan legyen a támadó számára"], c: 1 },
+    {q: "CBC mód esetén a dekódolás...", a: ["a blokkrejtjelező dekódoló (D) algoritmusát használja", "a blokkrejtjelező kódoló (E) algoritmusát használja"], c: 0 },
+    {q: "Blokkrejtjelezők esetén a lavina-hatás (avanalnche effect) azt jelenti, hogy...", a: ["a bemenet egy bitjének megváltoztatása a kimeneten sok bit változását okozza", "a belső rétegek (rounds) számával exponenciálisan nő a rejtjelező biztonsága"], c: 0 }
+    ];
+
+let currentQuestionIndex = 0;
+let score = 0;
+let shuffledQuestions = [];
+
+function initQuiz() {
+    shuffledQuestions = [...quizData].sort(() => Math.random() - 0.5);
+    currentQuestionIndex = 0;
+    score = 0;
+    showQuestion();
+}
+
+function showQuestion() {
+    const q = shuffledQuestions[currentQuestionIndex];
+    document.getElementById("score-board").innerText = `Kérdés: ${currentQuestionIndex + 1} / ${shuffledQuestions.length} | Pontszám: ${score}`;
+    document.getElementById("question-text").innerText = q.q;
+    const container = document.getElementById("options-container");
+    container.innerHTML = "";
+    document.getElementById("next-btn").style.display = "none";
+
+    q.a.forEach((opt, index) => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(index, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(index, btn) {
+    const q = shuffledQuestions[currentQuestionIndex];
+    const options = document.querySelectorAll(".option");
+    
+    // Disable further clicking
+    options.forEach(o => o.style.pointerEvents = "none");
+
+    if (index === q.c) {
+        btn.classList.add("correct");
+        score++;
+    } else {
+        btn.classList.add("wrong");
+        options[q.c].classList.add("correct");
+    }
+
+    if (currentQuestionIndex < shuffledQuestions.length - 1) {
+        document.getElementById("next-btn").style.display = "block";
+    } else {
+        showFinalResult();
+    }
+}
+
+document.getElementById("next-btn").onclick = () => {
+    currentQuestionIndex++;
+    showQuestion();
+};
+
+function showFinalResult() {
+    document.getElementById("quiz-content").style.display = "none";
+    document.getElementById("next-btn").style.display = "none";
+    document.getElementById("result-screen").style.display = "block";
+    document.getElementById("final-score").innerText = `${shuffledQuestions.length} kérdésből ${score} pontot értél el. (${Math.round(score/shuffledQuestions.length*100)}%)`;
+}
+
+document.getElementById("restart-btn").onclick = () => {
+    document.getElementById("quiz-content").style.display = "block";
+    document.getElementById("result-screen").style.display = "none";
+    initQuiz();
+};
+
+initQuiz();
+</script>
+
+</body>
+</html>
